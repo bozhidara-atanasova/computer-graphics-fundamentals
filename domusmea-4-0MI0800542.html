@@ -1,0 +1,659 @@
+﻿<!DOCTYPE html>
+<!--Божидара Атанасова, група 4, ф.н 0MI0800542-->
+<html>
+<head>
+  <style>
+    body {
+      margin: 0;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%
+    }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/",
+        "domus-mea": "https://cdn.jsdelivr.net/gh/boytchev/CourseOKG@latest/domus-mea.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <script type="module">
+    import * as THREE from "three";
+    import { domusMea, scene, renderer, camera } from "domus-mea";
+
+    domusMea('0MI0800542');
+
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const wallMaterial = new THREE.MeshPhongMaterial({ color: 'lightgray', side: THREE.DoubleSide });
+
+    function createWall(x, y, z, width, height, depth, rotationY = 0) {
+      const geometry = new THREE.BoxGeometry(width, height, depth);
+      const wall = new THREE.Mesh(geometry, wallMaterial);
+      wall.position.set(x, y, z);
+      wall.castShadow = true;
+      wall.receiveShadow = true;
+      wall.rotation.y = rotationY;
+      scene.add(wall);
+    }
+
+    // House walls
+    createWall(1.5, 1, -8, 7, 2, 0.2);
+    createWall(5, 1, -6.6, 0.2, 2, 3);
+    // Door main create
+    createWall(5, 1, 1.9, 0.2, 2, 2);
+    createWall(5, 1, 5.1, 0.2, 2, 2);
+    createWall(5, 1, 4.1, 0.2, 2, 1);
+    createWall(5, 1.7, 3.4, 0.2, 0.6, 1);
+    // Window hole 1
+    createWall(7, 1, -1, 0.2, 2, 4);
+    createWall(7, 0.3, -3, 0.2, 0.6, 4);
+    createWall(7, 1.7, -3, 0.2, 0.6, 4);
+    // More walls
+    createWall(6, 1, -5, 2.2, 2, 0.2);
+    createWall(6, 1, 1, 2.2, 2, 0.2);
+
+    // Second window hole
+    createWall(-0.5, 1, 6, 3, 2, 0.2);
+    createWall(3.8, 1, 6, 2.5, 2, 0.2);
+    createWall(1.8, 0.3, 6, 1.6, 0.6, 0.2);
+    createWall(1.8, 1.7, 6, 1.6, 0.6, 0.2);
+
+    // More walls
+    createWall(-2, 1, -6.6, 0.2, 2, 3);
+    createWall(-2, 1, 3.6, 0.2, 2, 5);
+    createWall(-4, 1, -2, 0.2, 2, 6);
+    createWall(-3, 1, -5, 2.2, 2, 0.2);
+    createWall(-3, 1, 1, 2.2, 2, 0.2);
+
+    // Inner room walls
+    createWall(-1, 1, 1, 0.2, 2, 1.998, Math.PI / 1.999);
+    createWall(0.785, 1, 1.524, 0.2, 2, 2, 0.998);
+
+    // Door 2
+    createWall(4.3, 1, 2.046, 0.2, 2, 1.2, Math.PI / 2);
+    createWall(2.27, 1, 2.046, 0.2, 2, 1.4, Math.PI / 1.994);
+    createWall(3.3, 1.7, 2.046, 0.2, 0.6, 1.5, Math.PI / 2);
+
+    // Inner doors/holes for rooms
+    createWall(-1, 1, -5, 3, 2, 0.2);
+    createWall(2.6, 1, -5, 1, 2, 0.2);
+    createWall(1.7, 1.7, -5, 2.4, 0.6, 0.2);
+    createWall(3.3, 1, -5, 1, 2, 0.2);
+    createWall(3.8, 1.7, -5, 2.4, 0.6, 0.2);
+    createWall(3, 1, -6.6, 0.2, 2, 3);
+
+    // Windows
+    const windowMaterial = new THREE.MeshPhongMaterial({ color: 'skyblue', opacity: 0.7, transparent: true, side: THREE.DoubleSide });
+    function createWindow(x, y, z, width, height, depth, rotationY = 0) {
+      const geometry = new THREE.BoxGeometry(width, height, depth);
+      const glass = new THREE.Mesh(geometry, windowMaterial);
+      glass.position.set(x, y, z);
+      glass.castShadow = false;
+      glass.receiveShadow = true;
+      glass.rotation.y = rotationY;
+      scene.add(glass);
+    }
+    createWindow(7, 1, -4, 0.05, 1.4, 2);
+    createWindow(1.8, 1, 6, 1.6, 1.4, 0.05);
+
+    // Doors
+    const doorMaterial = new THREE.MeshPhongMaterial({ color: 'brown', opacity: 0.8, side: THREE.DoubleSide });
+    function createDoor(x, y, z, width, height, depth, rotationY = 0) {
+      const geometry = new THREE.BoxGeometry(width, height, depth);
+      const door = new THREE.Mesh(geometry, doorMaterial);
+      door.position.set(x, y, z);
+      door.castShadow = false;
+      door.receiveShadow = true;
+      door.rotation.y = rotationY;
+      scene.add(door);
+      return door;
+    }
+
+    function createDoorHandle(x, y, z, rotationZ = 0, rotationY = 0) {
+      const handleMaterial = new THREE.MeshPhongMaterial({ color: 'gold' });
+      const handleGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.1, 16);
+      const handle = new THREE.Mesh(handleGeometry, handleMaterial);
+      handle.position.set(x, y, z);
+      handle.rotation.z = rotationZ;
+      handle.rotation.y = rotationY;
+      handle.castShadow = true;
+      handle.receiveShadow = true;
+      scene.add(handle);
+      return handle;
+    }
+
+    const door1 = createDoor(5, 0.9, 3.4, 0.05, 1.9, 1, 0);
+    createDoorHandle(5, 0.9 + 1.9 / 4 - 0.6, 3.4, Math.PI / 2);
+
+    const door2 = createDoor(3.3, 0.7, 2.05, 0.05, 1.4, 1, Math.PI / 2);
+    createDoorHandle(3.2, 0.7 + 1.4 / 4 - 0.4, 2.05, Math.PI / 2, Math.PI / 2);
+
+    const door3 = createDoor(1.5, 0.9, -5, 0.05, 1.9, 2, Math.PI / 2);
+    createDoorHandle(1.3, 0.2 + 1.9 / 4, -5, Math.PI / 2, Math.PI / 2);
+
+    const door4 = createDoor(4.5, 0.9, -5, 0.05, 1.9, 2, Math.PI / 2);
+    createDoorHandle(4.5 + 0.2, 0.2 + 1.9 / 4, -5, Math.PI / 2, Math.PI / 2);
+
+    // Hanger
+    const hangerMaterial = new THREE.MeshPhongMaterial({ color: 'black', side: THREE.DoubleSide });
+    function createHanger(x, y, z, height) {
+      const poleGeometry = new THREE.CylinderGeometry(0.05, 0.05, height, 32);
+      const pole = new THREE.Mesh(poleGeometry, hangerMaterial);
+      pole.position.set(x, y + height / 2, z);
+      pole.castShadow = true;
+      pole.receiveShadow = true;
+      scene.add(pole);
+
+      const hookGeometry2 = new THREE.BoxGeometry(0.1, 0.02, 0.5);
+      for (let i = 0; i < 4; i++) {
+        const hook = new THREE.Mesh(hookGeometry2, hangerMaterial);
+        hook.position.set(x, y + height - 0.5, z);
+        hook.rotation.y = (i * Math.PI) / 2;
+        hook.translateZ(0.3);
+        hook.castShadow = true;
+        hook.receiveShadow = true;
+        scene.add(hook);
+      }
+    }
+    function createHangerBase(x, y, z, radius) {
+      const baseMaterial = new THREE.MeshPhongMaterial({ color: 'black' });
+      const baseGeometry = new THREE.CylinderGeometry(radius, radius, 0.05, 32);
+      const base = new THREE.Mesh(baseGeometry, baseMaterial);
+      base.position.set(x, y + 0.025, z);
+      base.castShadow = true;
+      base.receiveShadow = true;
+      scene.add(base);
+    }
+    createHangerBase(4, 0, 5, 0.3);
+    createHanger(4, 0, 5, 2);
+
+    // Clothes
+    const jacketMaterial = new THREE.MeshPhongMaterial({ color: 'pink', side: THREE.DoubleSide });
+    function createJacket(x, y, z, width, height, depth, rotationY = 0) {
+      const bodyGeometry = new THREE.BoxGeometry(width, height, depth);
+      const body = new THREE.Mesh(bodyGeometry, jacketMaterial);
+      body.position.set(x, y - height / 2, z);
+      body.rotation.y = rotationY;
+      body.castShadow = true;
+      body.receiveShadow = true;
+      scene.add(body);
+
+      const sleeveGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.6, 32);
+      const leftSleeve = new THREE.Mesh(sleeveGeometry, jacketMaterial);
+      leftSleeve.rotation.z = Math.PI / 3;
+      leftSleeve.position.set(x + width / 2 - 0.2, y - height / 4 - 0.1, z - 0.2);
+      leftSleeve.rotation.y = rotationY;
+      leftSleeve.castShadow = true;
+      leftSleeve.receiveShadow = true;
+      scene.add(leftSleeve);
+
+      const rightSleeve = new THREE.Mesh(sleeveGeometry, jacketMaterial);
+      rightSleeve.rotation.z = -Math.PI / 3;
+      rightSleeve.position.set(x + width / 2 - 0.2, y - height / 4 - 0.1, z + 0.2);
+      rightSleeve.rotation.y = rotationY;
+      rightSleeve.castShadow = true;
+      rightSleeve.receiveShadow = true;
+      scene.add(rightSleeve);
+    }
+    createJacket(4.45, 1.6, 5, 0.4, 0.8, 0.3, Math.PI / 2);
+
+    // Wardrobe
+    const wardrobeMaterial = new THREE.MeshPhongMaterial({ color: 'white', side: THREE.DoubleSide });
+    function createWardrobe(x, y, z, width, height, depth) {
+      const geometry = new THREE.BoxGeometry(width, height, depth);
+      const wardrobe = new THREE.Mesh(geometry, wardrobeMaterial);
+      wardrobe.position.set(x, y + height / 2, z);
+      wardrobe.castShadow = true;
+      wardrobe.receiveShadow = true;
+
+      const lineMaterial = new THREE.MeshPhongMaterial({ color: 'black' });
+      const lineGeometry = new THREE.BoxGeometry(0.01, height, 0.01);
+      const line = new THREE.Mesh(lineGeometry, lineMaterial);
+      line.position.set(0, height / 2 - 1, depth / 2 - 0.5);
+      wardrobe.add(line);
+
+      const handleMaterial = new THREE.MeshPhongMaterial({ color: 'gold' });
+      const handleGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.1, 16);
+
+      const leftHandle = new THREE.Mesh(handleGeometry, handleMaterial);
+      leftHandle.position.set(-0.2, height / 2 - 1, depth / 2 - 0.5);
+      leftHandle.rotation.z = Math.PI / 2;
+      leftHandle.castShadow = true;
+      leftHandle.receiveShadow = true;
+      wardrobe.add(leftHandle);
+
+      const rightHandle = new THREE.Mesh(handleGeometry, handleMaterial);
+      rightHandle.position.set(0.2, height / 2 - 1, depth / 2 - 0.5);
+      rightHandle.rotation.z = Math.PI / 2;
+      rightHandle.castShadow = true;
+      rightHandle.receiveShadow = true;
+      wardrobe.add(rightHandle);
+
+      scene.add(wardrobe);
+    }
+    createWardrobe(0, 0, 5.6, 1.5, 2, 0.5);
+
+    // Kitchen
+    const kitchenMaterial = new THREE.MeshPhongMaterial({ color: 'darkgray', side: THREE.DoubleSide });
+    function createKitchenCabinet(x, y, z, width, height, depth) {
+      const geometry = new THREE.BoxGeometry(width, height, depth);
+      const cabinet = new THREE.Mesh(geometry, kitchenMaterial);
+      cabinet.position.set(x, y + height / 2, z);
+      cabinet.castShadow = true;
+      cabinet.receiveShadow = true;
+      scene.add(cabinet);
+    }
+
+    createKitchenCabinet(-1.2, 0, -7.65, 1, 1, 0.5);
+    createKitchenCabinet(-0.2, 0, -7.65, 1, 1, 0.5);
+    createKitchenCabinet(-0.7, 1.5, -7.65, 2, 0.5, 0.5);
+
+    function createCountertop(x, y, z, width, depth) {
+      const countertopMaterial = new THREE.MeshPhongMaterial({ color: 'beige', side: THREE.DoubleSide });
+      const geometry = new THREE.BoxGeometry(width, 0.1, depth);
+      const countertop = new THREE.Mesh(geometry, countertopMaterial);
+      countertop.position.set(x, y, z);
+      countertop.castShadow = true;
+      countertop.receiveShadow = true;
+      scene.add(countertop);
+    }
+    createCountertop(-0.7, 1, -7.65, 2, 0.5);
+
+    // Pans on wall
+    const panMaterial = new THREE.MeshPhongMaterial({ color: 'white' });
+    const handleMaterial = new THREE.MeshPhongMaterial({ color: 'gold' });
+
+    function createPanOnWall(x, y, z, radius, depth, handleLength) {
+      const panGeometry = new THREE.CylinderGeometry(radius, radius, 0.01, 32);
+      const pan = new THREE.Mesh(panGeometry, panMaterial);
+      pan.position.set(x, y, z);
+      pan.rotation.x = Math.PI / 2;
+      pan.castShadow = true;
+      pan.receiveShadow = true;
+      scene.add(pan);
+
+      const handleGeometry = new THREE.CylinderGeometry(0.02, 0.02, handleLength, 16);
+      const handle = new THREE.Mesh(handleGeometry, handleMaterial);
+      handle.position.set(x, y + radius + handleLength / 2 - 0.1, z);
+      handle.castShadow = true;
+      handle.receiveShadow = true;
+      scene.add(handle);
+    }
+
+    function createPanTorus(x, y, z, radius, rotateX = 0) {
+      const torusGeometry = new THREE.TorusGeometry(radius, 0.05, 16, 100);
+      const torus = new THREE.Mesh(torusGeometry, panMaterial);
+      torus.position.set(x, y, z);
+      torus.rotation.x = rotateX;
+      torus.castShadow = true;
+      torus.receiveShadow = true;
+      scene.add(torus);
+    }
+
+    createPanTorus(1, 0.92, -7.8, 0.3, Math.PI);
+    createPanTorus(2.3, 0.82, -7.8, 0.35, Math.PI);
+    createPanTorus(1.6, 0.82, -7.8, 0.28, Math.PI);
+    createPanOnWall(1, 0.9, -7.8, 0.3, 0.1, 0.6);
+    createPanOnWall(2.3, 0.8, -7.8, 0.35, 0.1, 0.7);
+    createPanOnWall(1.6, 0.8, -7.8, 0.28, 0.1, 0.65);
+
+    // Sofa and TV
+    const sofaMaterial = new THREE.MeshPhongMaterial({ color: 'darkblue', side: THREE.DoubleSide });
+    function createSofa(x, y, z, width, height, depth) {
+      const geometry = new THREE.BoxGeometry(width, height, depth);
+      const sofa = new THREE.Mesh(geometry, sofaMaterial);
+      sofa.position.set(x, y + height / 2, z);
+      sofa.castShadow = true;
+      sofa.receiveShadow = true;
+      scene.add(sofa);
+    }
+
+    const cushionMaterial = new THREE.MeshPhongMaterial({ color: 'white', side: THREE.DoubleSide });
+    function createCushion(x, y, z, width, height, depth) {
+      const geometry = new THREE.BoxGeometry(width, height, depth);
+      const cushion = new THREE.Mesh(geometry, cushionMaterial);
+      cushion.position.set(x, y, z);
+      cushion.castShadow = true;
+      cushion.receiveShadow = true;
+      scene.add(cushion);
+    }
+
+    createCushion(-3.31, 0.5, -2.1, 0.4, 0.3, 1.6);
+    createCushion(-0.71, 0.5, -2.1, 0.4, 0.3, 1.6);
+
+    const tvMaterial = new THREE.MeshPhongMaterial({ color: 'black', side: THREE.DoubleSide });
+    function createTV(x, y, z, width, height, depth) {
+      const geometry = new THREE.BoxGeometry(width, height, depth);
+      const tv = new THREE.Mesh(geometry, tvMaterial);
+      tv.position.set(x, y + height / 2, z);
+      tv.castShadow = true;
+      tv.receiveShadow = true;
+      scene.add(tv);
+    }
+
+    createSofa(-2, 0, -2, 3, 0.3, 1.7);
+    createSofa(-2, 0.3, -1.45, 3, 0.5, 0.6);
+    createTV(-2, 0.3, -4.9, 2.5, 1.5, 0.1);
+
+    // Table and chairs
+    const tableMaterial = new THREE.MeshPhongMaterial({ color: 'brown', side: THREE.DoubleSide });
+    function createRoundTable(x, y, z, radius, height) {
+      const tableTopGeometry = new THREE.CylinderGeometry(radius, radius, 0.1, 32);
+      const tableTop = new THREE.Mesh(tableTopGeometry, tableMaterial);
+      tableTop.position.set(x, y + height, z);
+      tableTop.castShadow = true;
+      tableTop.receiveShadow = true;
+      scene.add(tableTop);
+
+      const legGeometry = new THREE.CylinderGeometry(0.05, 0.05, height, 16);
+      for (let i = 0; i < 3; i++) {
+        const leg = new THREE.Mesh(legGeometry, tableMaterial);
+        leg.position.set(
+          x + Math.cos((i * 2 * Math.PI) / 3) * 0.4,
+          y + height / 2,
+          z + Math.sin((i * 2 * Math.PI) / 3) * 0.4
+        );
+        leg.castShadow = true;
+        leg.receiveShadow = true;
+        scene.add(leg);
+      }
+    }
+
+    const chairMaterial = new THREE.MeshPhongMaterial({ color: 'darkred', side: THREE.DoubleSide });
+    function createSimpleChair(x, y, z, width, height, depth, rotation) {
+      const seatGeometry = new THREE.BoxGeometry(width, 0.1, depth);
+      const seat = new THREE.Mesh(seatGeometry, chairMaterial);
+      seat.position.set(x, y + height / 2, z);
+      seat.castShadow = true;
+      seat.receiveShadow = true;
+      scene.add(seat);
+
+      const backGeometry = new THREE.BoxGeometry(width, height / 2, 0.1);
+      const back = new THREE.Mesh(backGeometry, chairMaterial);
+      back.position.set(x, y + 0.65, z - (depth / 2) - 0.05);
+      back.castShadow = true;
+      back.receiveShadow = true;
+      back.rotation.y = rotation;
+      scene.add(back);
+
+      const legGeometry = new THREE.CylinderGeometry(0.05, 0.05, height / 2, 16);
+
+      const leg1 = new THREE.Mesh(legGeometry, chairMaterial);
+      leg1.position.set(x + width / 2 - 0.05, y + height / 4, z + depth / 2 - 0.05);
+      leg1.castShadow = true;
+      leg1.receiveShadow = true;
+      scene.add(leg1);
+
+      const leg2 = new THREE.Mesh(legGeometry, chairMaterial);
+      leg2.position.set(x - width / 2 + 0.05, y + height / 4, z + depth / 2 - 0.05);
+      leg2.castShadow = true;
+      leg2.receiveShadow = true;
+      scene.add(leg2);
+
+      const leg3 = new THREE.Mesh(legGeometry, chairMaterial);
+      leg3.position.set(x + width / 2 - 0.05, y + height / 4, z - depth / 2 + 0.05);
+      leg3.castShadow = true;
+      leg3.receiveShadow = true;
+      scene.add(leg3);
+
+      const leg4 = new THREE.Mesh(legGeometry, chairMaterial);
+      leg4.position.set(x - width / 2 + 0.05, y + height / 4, z - depth / 2 + 0.05);
+      leg4.castShadow = true;
+      leg4.receiveShadow = true;
+      scene.add(leg4);
+
+      function moveBackrestBackward(distance) { back.position.z -= distance; }
+      function moveBackrestLeft(distance) { back.position.x -= distance; }
+      function moveBackrestRight(distance) { back.position.x += distance; }
+
+      return { moveBackrestBackward, moveBackrestLeft, moveBackrestRight };
+    }
+
+    createRoundTable(2, 0, -3, 0.75, 0.8);
+    const chair1 = createSimpleChair(3.2, 0, -3.1, 0.5, 0.8, 0.5, Math.PI / 2);
+    chair1.moveBackrestBackward(-0.3);
+    chair1.moveBackrestLeft(-0.2);
+
+    const chair2 = createSimpleChair(0.8, 0, -3, 0.5, 0.8, 0.5, Math.PI / 2);
+    chair2.moveBackrestBackward(-0.3);
+    chair2.moveBackrestRight(-0.2);
+
+    const chair3 = createSimpleChair(2, 0, -1.8, 0.5, 0.8, 0.5, 0);
+    chair3.moveBackrestBackward(-0.5);
+    chair3.moveBackrestLeft(-0.2);
+    chair3.moveBackrestRight(-0.2);
+
+    const chair4 = createSimpleChair(2, 0, -4.2, 0.5, 0.8, 0.5, 0);
+    chair4.moveBackrestBackward(-0.1);
+    chair4.moveBackrestLeft(-0.2);
+    chair4.moveBackrestRight(-0.2);
+
+    // Bathroom: Toilet
+    const toiletMaterial = new THREE.MeshPhongMaterial({ color: 'white', side: THREE.DoubleSide });
+    function createToilet(x, y, z) {
+      const baseGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.2, 32);
+      const base = new THREE.Mesh(baseGeometry, toiletMaterial);
+      base.position.set(x, y + 0.1, z);
+      base.castShadow = true;
+      base.receiveShadow = true;
+      scene.add(base);
+
+      const bowlGeometry = new THREE.CylinderGeometry(0.35, 0.35, 0.4, 32);
+      const bowl = new THREE.Mesh(bowlGeometry, toiletMaterial);
+      bowl.position.set(x, y + 0.5, z);
+      bowl.castShadow = true;
+      bowl.receiveShadow = true;
+      scene.add(bowl);
+
+      const tankGeometry = new THREE.BoxGeometry(0.4, 0.3, 0.2);
+      const tank = new THREE.Mesh(tankGeometry, toiletMaterial);
+      tank.position.set(x, y + 0.85, z - 0.25);
+      tank.castShadow = true;
+      tank.receiveShadow = true;
+      scene.add(tank);
+    }
+    createToilet(4, 0, -7.5);
+
+    // Sink
+    const sinkMaterial = new THREE.MeshPhongMaterial({ color: 'white', side: THREE.DoubleSide });
+    const faucetMaterial = new THREE.MeshPhongMaterial({ color: 'silver' });
+    function createSink(x, y, z) {
+      const baseGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.1, 32);
+      const base = new THREE.Mesh(baseGeometry, sinkMaterial);
+      base.position.set(x, y + 0.05, z);
+      base.castShadow = true;
+      base.receiveShadow = true;
+      scene.add(base);
+
+      const bowlGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.2, 32, 1, true);
+      const bowl = new THREE.Mesh(bowlGeometry, sinkMaterial);
+      bowl.position.set(x, y + 0.25, z);
+      bowl.rotation.x = Math.PI;
+      bowl.castShadow = true;
+      bowl.receiveShadow = true;
+      scene.add(bowl);
+
+      const faucetGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 16);
+      const faucet = new THREE.Mesh(faucetGeometry, faucetMaterial);
+      faucet.position.set(x, y + 0.65, z + 0.2);
+      faucet.rotation.x = Math.PI / 2;
+      faucet.castShadow = true;
+      faucet.receiveShadow = true;
+      scene.add(faucet);
+
+      const spoutGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.2, 16);
+      const spout = new THREE.Mesh(spoutGeometry, faucetMaterial);
+      spout.position.set(x, y + 0.65, z - 0.05);
+      spout.castShadow = true;
+      spout.receiveShadow = true;
+      scene.add(spout);
+    }
+    createSink(3.4, 0, -5.4);
+
+    // Frying pan with egg
+    const panMaterial2 = new THREE.MeshPhongMaterial({ color: 'black' });
+    const eggMaterial = new THREE.MeshPhongMaterial({ color: 'white' });
+    const yolkMaterial = new THREE.MeshPhongMaterial({ color: 'yellow' });
+
+    function createFryingPanWithEgg(x, y, z) {
+      const panBaseGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.05, 32);
+      const panBase = new THREE.Mesh(panBaseGeometry, panMaterial2);
+      panBase.position.set(x, y, z);
+      panBase.castShadow = true;
+      panBase.receiveShadow = true;
+      scene.add(panBase);
+
+      const handleGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.4, 16);
+      const handle = new THREE.Mesh(handleGeometry, panMaterial2);
+      handle.position.set(x + 0.4, y, z);
+      handle.rotation.z = Math.PI / 2;
+      handle.castShadow = true;
+      handle.receiveShadow = true;
+      scene.add(handle);
+
+      const eggWhiteGeometry = new THREE.CircleGeometry(0.1, 32);
+      const eggWhite = new THREE.Mesh(eggWhiteGeometry, eggMaterial);
+      eggWhite.rotation.x = -Math.PI / 2;
+      eggWhite.position.set(x, y + 0.03, z);
+      eggWhite.castShadow = true;
+      eggWhite.receiveShadow = true;
+      scene.add(eggWhite);
+
+      const yolkGeometry = new THREE.SphereGeometry(0.05, 16, 16);
+      const yolk = new THREE.Mesh(yolkGeometry, yolkMaterial);
+      yolk.position.set(x, y + 0.04, z);
+      yolk.castShadow = true;
+      yolk.receiveShadow = true;
+      scene.add(yolk);
+    }
+    createFryingPanWithEgg(2, 0.85, -3);
+    // Racket rack and tennis rackets
+    const rackMaterial = new THREE.MeshPhongMaterial({ color: 'saddlebrown', side: THREE.DoubleSide });
+    const hookMaterial2 = new THREE.MeshPhongMaterial({ color: 'black', side: THREE.DoubleSide });
+    const racketHandleMaterial = new THREE.MeshPhongMaterial({ color: 'brown', side: THREE.DoubleSide });
+    const racketFrameMaterial = new THREE.MeshPhongMaterial({ color: 'darkgreen', side: THREE.DoubleSide });
+    const racketStringMaterial = new THREE.MeshPhongMaterial({ color: 'white', side: THREE.DoubleSide });
+
+    function createRacketRack(x, y, z, width, height, depth, rotationY = 0) {
+      const boardGeometry = new THREE.BoxGeometry(width, height, depth);
+      const board = new THREE.Mesh(boardGeometry, rackMaterial);
+      board.position.set(x, y, z);
+      board.rotation.y = rotationY;
+      board.castShadow = true;
+      board.receiveShadow = true;
+      scene.add(board);
+
+      const hookCount = 3;
+      for (let i = 0; i < hookCount; i++) {
+        const hookGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.15, 16);
+        const hook = new THREE.Mesh(hookGeometry, hookMaterial2);
+        const spacing = width / (hookCount + 1);
+        const hookX = x - (width / 2) + spacing * (i + 1);
+        const hookY = y;
+        const hookZ = z + depth / 2 + 0.05;
+        hook.position.set(hookX, hookY, hookZ);
+        hook.rotation.x = Math.PI / 2;
+        hook.rotation.y = Math.PI/2;
+        hook.castShadow = true;
+        hook.receiveShadow = true;
+        scene.add(hook);
+      }
+    }
+
+    function createTennisRacket(x, y, z) {
+      const racketGroup = new THREE.Group();
+
+      // Handle
+      const handleGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 16);
+      const handle = new THREE.Mesh(handleGeometry, racketHandleMaterial);
+      handle.position.set(0, 0.05, 0);
+      handle.castShadow = true;
+      handle.receiveShadow = true;
+      racketGroup.add(handle);
+
+      // Frame (torus)
+      const frameGeometry = new THREE.TorusGeometry(0.15, 0.01, 16, 100);
+      const frame = new THREE.Mesh(frameGeometry, racketFrameMaterial);
+      frame.position.set(0, 0.2, 0);
+      frame.castShadow = true;
+      frame.receiveShadow = true;
+      racketGroup.add(frame);
+
+      // Strings
+      const stringCount = 5;
+      const stringSpacing = 0.04;
+      for (let i = -(stringCount - 1) / 2; i <= (stringCount - 1) / 2; i++) {
+        // Vertical strings
+        const verticalStringGeometry = new THREE.BoxGeometry(0.002, 0.22, 0.002);
+        const vString = new THREE.Mesh(verticalStringGeometry, racketStringMaterial);
+        vString.position.set(i * stringSpacing, 0.2, 0);
+        vString.castShadow = true;
+        vString.receiveShadow = true;
+        racketGroup.add(vString);
+
+        // Horizontal strings
+        const horizontalStringGeometry = new THREE.BoxGeometry(0.22, 0.002, 0.002);
+        const hString = new THREE.Mesh(horizontalStringGeometry, racketStringMaterial);
+        hString.position.set(0, 0.2 + i * stringSpacing, 0);
+        hString.castShadow = true;
+        hString.receiveShadow = true;
+        racketGroup.add(hString);
+      }
+
+      // Rotate so it hangs like pans, handle down:
+      racketGroup.rotation.x = Math.PI / 2; // put it "on the wall"
+      racketGroup.rotation.z = Math.PI;      // flip upside down so handle is downward
+
+      racketGroup.position.set(x, y, z);
+      scene.add(racketGroup);
+    }
+
+    // Move racket rack more centrally on the wall
+    const rackX = 0;
+    const rackY = 1;
+    const rackZ = 5;
+
+    createRacketRack(rackX , rackY, rackZ, 1.2, 0.3, 0.05, Math.PI / 2);
+    createTennisRacket(rackX - 0.4, rackY, rackZ - 0.05);
+    createTennisRacket(rackX, rackY, rackZ - 0.05);
+    createTennisRacket(rackX + 0.4, rackY, rackZ - 0.05);
+
+    // Lights
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(10, 10, 10);
+    light.castShadow = true;
+    light.shadow.camera.left = -10;
+    light.shadow.camera.right = 10;
+    light.shadow.camera.top = 10;
+    light.shadow.camera.bottom = -10;
+    light.shadow.camera.near = 1;
+    light.shadow.camera.far = 50;
+    light.shadow.mapSize.width = 1024;
+    light.shadow.mapSize.height = 1024;
+    scene.add(light);
+
+    const ambientLight = new THREE.AmbientLight(0x404040);
+    scene.add(ambientLight);
+
+    camera.position.set(0, 5, 15);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
