@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Tennis Scene</title>
+  <style>
+    body {
+      color: black;
+      text-shadow: 0 0 4px gray;
+      font-family: Calibri;
+      margin: 0;
+      overflow: hidden;
+    }
+    h1 {
+      position: fixed;
+      z-index: 10;
+      top: 0;
+      left: 0;
+      text-align: center;
+      width: 100%;
+    }
+    div {
+      position: fixed;
+      z-index: 10;
+      bottom: 1em;
+      left: 1em;
+      font-size: 1.5em;
+      font-style: italic;
+    }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+      "mannequin": "https://cdn.jsdelivr.net/npm/mannequin-js@latest/src/mannequin.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- Заглавие -->
+  <h1>Tennis Scene</h1>
+
+  <!-- Описание с рима -->
+  <div>
+    Двама спортисти с хъс играят тенис днес,<br>
+    с топки във въздуха звучи изящна чест,<br>
+    ракетите ехтят във ритъм бърз и лек, &ndash;<br>
+    а сцената блести под слънчев, златен мек.
+  </div>
+
+  <script type="module">
+    import { NURBSSurface } from "three/addons/curves/NURBSSurface.js";
+    import { ParametricGeometry } from "three/addons/geometries/ParametricGeometry.js";
+    import * as MANNEQUIN from "mannequin";
+    import * as THREE from "three";
+
+    // Създаваме сцената чрез MANNEQUIN – но тук няма вградена анимация,
+    // затова ще изградим собствен цикъл.
+    MANNEQUIN.createStage();
+    const stage = MANNEQUIN.getStage();
+    const scene = stage.scene;
+
+    // Добавяме осветление
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(5, 10, 7);
+    scene.add(directionalLight);
+
+    // Подът
+    const groundGeom = new THREE.PlaneGeometry(23, 11);
+    const groundMat = new THREE.MeshBasicMaterial({ color: 0x228B22 });
+    const ground = new THREE.Mesh(groundGeom, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.69;
+    scene.add(ground);
+
+    // ────── Фигури ──────
+
+    // Мъжка фигура
+    const figure = new MANNEQUIN.Male();
+    figure.position.set(-4, 0.25, 0);
+    figure.rotation.y = -Math.PI / 4;
+    figure.r_fingers.bend = 45;
+    scene.add(figure);
+
+    // Женска фигура
+    const figure2 = new MANNEQUIN.Female();
+    figure2.position.set(2, 0.25, 0);
+    figure2.rotation.y = Math.PI / 2 - 5;
+    figure2.r_fingers.bend = 45;
+    figure2.torso.recolor("pink");
+    scene.add(figure2);
+
+    // ────── Създаване на тениска чрез Bezier повърхност ──────
+    class Bezier3D extends ParametricGeometry {
+      constructor(n, count = 30) {
+        const points = [];
+        for (let i = 0; i < n; i++) {
+          points.push([]);
+          for (let j = 0; j < n; j++) {
+            // Разполага контролните точки около (0,0,0)
+            points[i].push(new THREE.Vector4(i - (n - 1) / 2, 0, j - (n - 1) / 2, 1));
+          }
+        }
+        const knots = [];
+        for (let i = 0; i < 2 * n; i++) {
+          knots.push(i < n ? 0 : 1);
+        }
+        const surface = new NURBSSurface(n - 1, n - 1, knots, knots, points);
+        super((u, v, target) => surface.getPoint(u, v, target), count, count);
+        this.surface = surface;
+        this.count = count;
+      }
+      setControlPoint(i, j, v, weight = 1) {
+        const p = this.surface.controlPoints;
+        p[i][j].x = v.x;
+        p[i][j].y = v.y;
+        p[i][j].z = v.z;
+        p[i][j].w = weight;
+      }
+      update() {
+        const pos = this.attributes.position;
+        const p = new THREE.Vector3();
+        let k = 0;
+        for (let i = 0; i <= this.count; i++) {
+          for (let j = 0; j <= this.count; j++) {
+            this.parameters.func(j / this.count, i / this.count, p);
+            pos.setXYZ(k++, p.x, p.y, p.z);
+          }
+        }
+        this.attributes.position.needsUpdate = true;
+        this.computeVertexNormals();
+        this.computeBoundingSphere();
+      }
+    }
+
+    // Настройваме тениската с 4x4 контролни точки – променете стойностите по ваше желание,
+    // за да се "свити" и да пасне върху торса.
+    const tshirtGeometry = new Bezier3D(4, 30);
+    // Долен ред (отдолу на тениската)
+    tshirtGeometry.setControlPoint(0, 0, new THREE.Vector3(-0.5, 1.0, -0.5));
+    tshirtGeometry.setControlPoint(0, 1, new THREE.Vector3(-0.2, 0.9, -0.5));
+    tshirtGeometry.setControlPoint(0, 2, new THREE.Vector3(0.2, 0.9, -0.5));
+    tshirtGeometry.setControlPoint(0, 3, new THREE.Vector3(0.5, 1.0, -0.5));
+    // Среден ред
+    tshirtGeometry.setControlPoint(1, 0, new THREE.Vector3(-0.6, 1.1, -0.5));
+    tshirtGeometry.setControlPoint(1, 1, new THREE.Vector3(-0.2, 1.15, -0.5));
+    tshirtGeometry.setControlPoint(1, 2, new THREE.Vector3(0.2, 1.15, -0.5));
+    tshirtGeometry.setControlPoint(1, 3, new THREE.Vector3(0.6, 1.1, -0.5));
+    // Горен ред
+    tshirtGeometry.setControlPoint(2, 0, new THREE.Vector3(-0.6, 1.2, 0.5));
+    tshirtGeometry.setControlPoint(2, 1, new THREE.Vector3(-0.2, 1.25, 0.5));
+    tshirtGeometry.setControlPoint(2, 2, new THREE.Vector3(0.2, 1.25, 0.5));
+    tshirtGeometry.setControlPoint(2, 3, new THREE.Vector3(0.6, 1.2, 0.5));
+    // Деколте (горен край)
+    tshirtGeometry.setControlPoint(3, 0, new THREE.Vector3(-0.5, 1.0, 0.5));
+    tshirtGeometry.setControlPoint(3, 1, new THREE.Vector3(-0.2, 0.95, 0.5));
+    tshirtGeometry.setControlPoint(3, 2, new THREE.Vector3(0.2, 0.95, 0.5));
+    tshirtGeometry.setControlPoint(3, 3, new THREE.Vector3(0.5, 1.0, 0.5));
+    tshirtGeometry.update();
+
+    // Материал за тениската
+    const tshirtMaterial = new THREE.MeshPhysicalMaterial({
+      color: "blue",
+      side: THREE.DoubleSide,
+      roughness: 0.5,
+      metalness: 0.1,
+      emissive: "blue",
+      emissiveIntensity: 0.5
+    });
+
+    const tshirt = new THREE.Mesh(tshirtGeometry, tshirtMaterial);
+    // Позиционираме и завъртаме тениската, така че да пасне на торса
+    tshirt.position.set(0, 0.3, 0);
+    tshirt.scale.set(1.2, 1.2, 1.2);
+    tshirt.rotation.x = Math.PI / 2;
+    // За да сте сигурни, че тениската ще бъде видима, можете временно да зададете:
+    // tshirt.visible = true;
+    figure.torso.add(tshirt);
+    console.log("T-shirt добавена към торса на фигурата:", tshirt);
+
+    // ────── Публика ──────
+    const audience = [];
+    for (let i = 0; i < 4; i++) {
+      const person = (i % 2 === 0) ? new MANNEQUIN.Male() : new MANNEQUIN.Female();
+      person.position.set(-2.7 + i, 0.25, 3);
+      person.rotation.y = Math.PI;
+      person.torso.recolor(i % 2 === 0 ? "blue" : "pink");
+      scene.add(person);
+      audience.push(person);
+    }
+
+    // ────── Съдия (стол и фигура) ──────
+    const chairGroup = new THREE.Group();
+    const seatGeometry = new THREE.BoxGeometry(1, 0.1, 1);
+    const seatMaterial = new THREE.MeshBasicMaterial({ color: 0x8B0000 });
+    const seat = new THREE.Mesh(seatGeometry, seatMaterial);
+    seat.position.set(0, 2.3, -2);
+    chairGroup.add(seat);
+
+    const legGeometry = new THREE.CylinderGeometry(0.1, 0.1, 2);
+    const legMaterial = new THREE.MeshBasicMaterial({ color: 0x8B0000 });
+    for (let i = -0.4; i <= 0.4; i += 0.8) {
+      for (let j = -0.4; j <= 0.4; j += 0.8) {
+        const leg = new THREE.Mesh(legGeometry, legMaterial);
+        leg.position.set(i, 1.75, j - 2);
+        chairGroup.add(leg);
+      }
+    }
+    const backRestGeometry = new THREE.BoxGeometry(1, 1, 0.1);
+    const backRestMaterial = new THREE.MeshBasicMaterial({ color: 0x8B0000 });
+    const backRest = new THREE.Mesh(backRestGeometry, backRestMaterial);
+    backRest.position.set(0, 2.8, -2.45);
+    chairGroup.add(backRest);
+    chairGroup.position.set(-1.5, -1.5, -4);
+    scene.add(chairGroup);
+
+    const referee = new MANNEQUIN.Male();
+    referee.position.set(-1.5, 1, -6);
+    referee.torso.recolor("white");
+    referee.l_leg.raise = 90;
+    referee.r_leg.raise = 90;
+    referee.torso.turn = -5;
+    referee.r_arm.raise = 90;
+    scene.add(referee);
+
+    // ────── Ракети ──────
+    const createRacket = () => {
+      const racketGroup = new THREE.Group();
+      const handleGeometry = new THREE.CylinderGeometry(0.5, 0.5, 4, 32);
+      const handleMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
+      const handle = new THREE.Mesh(handleGeometry, handleMaterial);
+      handle.position.set(0, -0.25, 0);
+      racketGroup.add(handle);
+      const frameGeometry = new THREE.TorusGeometry(3.3, 0.2, 64, 100);
+      const frameMaterial = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+      const frame = new THREE.Mesh(frameGeometry, frameMaterial);
+      frame.position.set(0, 4.9, 0);
+      racketGroup.add(frame);
+      return racketGroup;
+    };
+
+    const racket1 = createRacket();
+    figure.r_fingers.attach(racket1);
+    racket1.rotation.set(Math.PI / 2, -Math.PI / 2, 0);
+    racket1.position.set(-1, 0, 0.5);
+
+    const racket2 = createRacket();
+    figure2.r_fingers.attach(racket2);
+    racket2.rotation.set(Math.PI / 2, Math.PI, 0);
+    racket2.position.set(-1, 0, 1);
+
+    // ────── Анимация ──────
+
+    // Функция за плавно ease-in-out
+    function easeInOutQuad(t) {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    function animate(time) {
+      // Извикваме следващия кадър
+      requestAnimationFrame(animate);
+
+      // Изчисляваме нормализирано време (в секунди)
+      const t = time * 0.001;
+
+      // Анимираме мъжката фигура – използваме циклично движение с период ~2 секунди
+      const maleCycle = (t % 2) / 2; // стойност от 0 до 1
+      const maleSwingRaw = Math.sin(maleCycle * Math.PI * 2);
+      const maleSwing = easeInOutQuad((maleSwingRaw + 1) / 2);
+      figure.r_arm.raise = THREE.MathUtils.lerp(60, 30, maleSwing);
+      figure.r_arm.straddle = THREE.MathUtils.lerp(40, 70, maleSwing);
+      figure.r_wrist.bend = THREE.MathUtils.lerp(0, -20, maleSwing);
+      figure.r_elbow.bend = THREE.MathUtils.lerp(20, 0, maleSwing);
+      figure.l_arm.raise = THREE.MathUtils.lerp(90, 110, maleSwing);
+      figure.torso.turn = THREE.MathUtils.lerp(-20, 20, maleSwing);
+      figure.torso.bend = THREE.MathUtils.lerp(0, 10, maleSwing);
+      figure.body.turn = THREE.MathUtils.lerp(-20, 20, maleSwing);
+      figure.head.turn = THREE.MathUtils.lerp(0, 10, maleSwing);
+      figure.head.nod = THREE.MathUtils.lerp(0, 5, maleSwing);
+      figure.l_leg.raise = THREE.MathUtils.lerp(0, 5, maleSwing);
+      figure.l_leg.turn = THREE.MathUtils.lerp(0, 5, maleSwing);
+      figure.r_leg.raise = THREE.MathUtils.lerp(0, 5, 1 - maleSwing);
+      figure.r_leg.turn = THREE.MathUtils.lerp(0, -5, 1 - maleSwing);
+
+      // Анимираме женската фигура – със смещение на фазата ( +0.5)
+      const femaleCycle = ((t + 1) % 2) / 2;
+      const femaleSwingRaw = Math.sin(femaleCycle * Math.PI * 2);
+      const femaleSwing = easeInOutQuad((femaleSwingRaw + 1) / 2);
+      figure2.r_arm.raise = THREE.MathUtils.lerp(60, 30, femaleSwing);
+      figure2.r_arm.straddle = THREE.MathUtils.lerp(40, 70, femaleSwing);
+      figure2.r_arm.turn = THREE.MathUtils.lerp(-30, 0, femaleSwing);
+      figure2.r_arm.swivel = THREE.MathUtils.lerp(-60, -20, femaleSwing);
+      figure2.r_wrist.bend = THREE.MathUtils.lerp(0, -20, femaleSwing);
+      figure2.r_elbow.bend = THREE.MathUtils.lerp(20, 0, femaleSwing);
+      figure2.l_arm.raise = THREE.MathUtils.lerp(90, 110, femaleSwing);
+      figure2.torso.turn = THREE.MathUtils.lerp(-20, 20, femaleSwing);
+      figure2.torso.bend = THREE.MathUtils.lerp(0, 10, femaleSwing);
+      figure2.body.turn = THREE.MathUtils.lerp(-20, 20, femaleSwing);
+      figure2.head.turn = THREE.MathUtils.lerp(0, 10, femaleSwing);
+      figure2.head.nod = THREE.MathUtils.lerp(0, 5, femaleSwing);
+      figure2.l_leg.raise = THREE.MathUtils.lerp(0, 5, femaleSwing);
+      figure2.l_leg.turn = THREE.MathUtils.lerp(0, 5, femaleSwing);
+      figure2.r_leg.raise = THREE.MathUtils.lerp(0, 5, 1 - femaleSwing);
+      figure2.r_leg.turn = THREE.MathUtils.lerp(0, -5, 1 - femaleSwing);
+
+      // Анимираме публиката с лек скок и махане на ръцете
+      const audienceCycle = 3; // 3 секунди
+      audience.forEach((person, index) => {
+        const phase = ((t + index * 0.2) % audienceCycle) / audienceCycle;
+        const bounce = Math.abs(Math.sin(phase * Math.PI * 2)) * 0.1;
+        person.position.y = 0.25 + bounce;
+        const armSwing = easeInOutQuad((Math.sin(phase * Math.PI * 2) + 1) / 2);
+        person.r_arm.raise = THREE.MathUtils.lerp(0, 180, armSwing);
+        person.l_arm.raise = THREE.MathUtils.lerp(0, 180, armSwing);
+      });
+
+      // Ако MANNEQUIN не обновява автоматично, можем да извикаме и:
+      // stage.renderer.render(scene, stage.camera);
+    }
+
+    // Стартираме анимационния цикъл
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
